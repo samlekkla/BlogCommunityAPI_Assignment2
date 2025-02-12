@@ -7,7 +7,7 @@ namespace BlogCommunityAPI_Assignment2.Repository.Interfaces
         int CreateUser(string username, string passwordHash, string email); // Creates a new user and returns the UserId  
         User GetUserByUsername(string username); // Retrieves a user by their userId
         int UpdateUser(int userId, UpdateUserDTO userDTO);
-        bool DeleteUser(int userId);
+        int DeleteUser(int userId);
 
     }
 }

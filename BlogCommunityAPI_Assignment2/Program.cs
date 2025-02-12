@@ -3,8 +3,10 @@ using BlogCommunityAPI_Assignment2.Repository.Interfaces;
 using BlogCommunityAPI_Assignment2.Repository.Repos;
 using BlogCommunityAPI_Assignment2.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Data.SqlClient;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.Data;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,6 +17,15 @@ builder.Services.AddControllers();
 // Add dependency injection
 builder.Services.AddScoped<IBlogCommunity, BlogContext>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IBlogPostRepository, BlogPostRepository>();
+builder.Services.AddScoped<ICommentRepository, CommentRepository>();
+
+builder.Services.AddScoped<IDbConnection>(sp =>
+{
+    var configuration = sp.GetRequiredService<IConfiguration>();
+    var connectionString = configuration.GetConnectionString("DefaultConnection");
+    return new SqlConnection(connectionString);
+});
 
 
 // Define the JWT secret key
@@ -40,8 +51,8 @@ builder.Services.AddAuthentication(opt =>
 {
     opt.TokenValidationParameters = new TokenValidationParameters
     {
-        ValidateIssuer = true, // Ensure the token has a valid issuer
-        ValidateAudience = true, // Ensure the token has a valid audience
+        ValidateIssuer = false, // Ensure the token has a valid issuer
+        ValidateAudience = false, // Ensure the token has a valid audience
         ValidateLifetime = true, // Ensure the token has not expired
         ValidateIssuerSigningKey = true, // Ensure the token's signing key is valid
         ValidIssuer = "http://localhost:5062", // The expected issuer

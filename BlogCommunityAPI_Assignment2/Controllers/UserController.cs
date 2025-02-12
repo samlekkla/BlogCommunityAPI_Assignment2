@@ -91,15 +91,17 @@ namespace BlogCommunityAPI_Assignment2.Controllers
         }
 
 
-        [HttpDelete("delete_user/{userId}")]
+        [HttpDelete("{userId}/Delete_User")]
         public IActionResult DeleteUser(int userId)
         {
-            var success = _userRepository.DeleteUser(userId);
+            var rowsAffected = _userRepository.DeleteUser(userId);
 
-            if (!success)
-                return NotFound("User not found or could not be deleted.");
+            if (rowsAffected == 0)
+            {
+                return NotFound("No found for the given user ID");
+            }
 
-            return Ok("User deleted successfully.");
+            return Ok("User account deleted successfully.");
         }
 
     }

@@ -11,6 +11,7 @@ namespace BlogCommunityAPI_Assignment2.Services
         private readonly IUserRepository _userRepository; // Dependency for accessing user data
         private readonly string _jwtSecret; // Store the JWT secret key
 
+
         // Constructor that takes IUserRepository and the JWT secret key
         public AuthService(IUserRepository userRepository, string jwtSecret)
         {

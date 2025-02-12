@@ -1,7 +1,6 @@
 ﻿using BlogCommunityAPI_Assignment2.DTO;
 using BlogCommunityAPI_Assignment2.Repository.Interfaces;
 using Dapper;
-using System.ComponentModel.DataAnnotations;
 using System.Data;
 
 namespace BlogCommunityAPI_Assignment2.Repository.Repos
@@ -82,19 +81,21 @@ namespace BlogCommunityAPI_Assignment2.Repository.Repos
             }
         }
 
-
-        public bool DeleteUser(int userId)
+        public int DeleteUser(int userId)
         {
-            using (var connection = _dbContext.GetConnection())
+            using (var connection = _dbContext.GetConnection()) // Get a database connection
             {
-                connection.Open();
+                connection.Open(); // Open the connection
 
-                var parameters = new DynamicParameters();
-                parameters.Add("@UserId", userId);
-
-                var rowsAffected = connection.Execute("dbo.DeleteUser", parameters, commandType: CommandType.StoredProcedure);
-
-                return rowsAffected > 0;
+                // Call the stored procedure
+                return connection.Execute(
+                    "dbo.DeleteUser", // Stored procedure name
+                    new
+                    {
+                        UserId = userId // Pass UserId
+                    },
+                    commandType: CommandType.StoredProcedure // Specify that it's a stored procedure
+                );
             }
         }
 
