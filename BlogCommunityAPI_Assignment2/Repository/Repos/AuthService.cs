@@ -42,23 +42,20 @@ namespace BlogCommunityAPI_Assignment2.Services
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
-                // Define the claims for the token
-
                 Subject = new ClaimsIdentity(new[]
                 {
-                    new Claim(ClaimTypes.Name, user.UserID.ToString()), // Add UserID as Name claim
-                    new Claim(ClaimTypes.Role, "User") // Assign role claim
-                }),
-                Expires = DateTime.UtcNow.AddHours(2), // Token expiration
-                Issuer = "http://localhost:5062", // Must match ValidIssuer
-                Audience = "http://localhost:5062", // Must match ValidAudience
+            new Claim(ClaimTypes.NameIdentifier, user.UserID.ToString()), // Viktigt för att kunna hämta UserID i controller
+            new Claim("UserID", user.UserID.ToString()), // Extra säkerhet
+            new Claim(ClaimTypes.Role, "User") // Assign role claim
+        }),
+                Expires = DateTime.UtcNow.AddHours(2),
+                Issuer = "http://localhost:5062",
+                Audience = "http://localhost:5062",
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
 
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-
-            // Serialize the token to a string and return it
-            return tokenHandler.WriteToken(token); // Return the generated JWT token
+            SecurityToken token = tokenHandler.CreateToken(tokenDescriptor); // Skapa token här
+            return tokenHandler.WriteToken(token); // Nu används token korrekt
         }
     }
 }

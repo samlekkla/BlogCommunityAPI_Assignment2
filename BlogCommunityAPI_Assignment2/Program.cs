@@ -51,8 +51,8 @@ builder.Services.AddAuthentication(opt =>
 {
     opt.TokenValidationParameters = new TokenValidationParameters
     {
-        ValidateIssuer = false, // Ensure the token has a valid issuer
-        ValidateAudience = false, // Ensure the token has a valid audience
+        ValidateIssuer = true, // Ensure the token has a valid issuer
+        ValidateAudience = true, // Ensure the token has a valid audience
         ValidateLifetime = true, // Ensure the token has not expired
         ValidateIssuerSigningKey = true, // Ensure the token's signing key is valid
         ValidIssuer = "http://localhost:5062", // The expected issuer

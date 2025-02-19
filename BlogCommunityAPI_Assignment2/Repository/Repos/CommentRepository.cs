@@ -1,13 +1,10 @@
-﻿using BlogCommunityAPI_Assignment2.DTO;
-using BlogCommunityAPI_Assignment2.Repository.Entities;
+﻿using BlogCommunityAPI_Assignment2.Repository.Entities;
 using BlogCommunityAPI_Assignment2.Repository.Interfaces;
 using Dapper;
-using Microsoft.Data.SqlClient;
 using System.Data;
 
 namespace BlogCommunityAPI_Assignment2.Repository.Repos
 {
-
     public class CommentRepository : ICommentRepository
     {
         private readonly IBlogCommunity _dbContext;
@@ -23,7 +20,7 @@ namespace BlogCommunityAPI_Assignment2.Repository.Repos
             {
                 connection.Open();
                 connection.Execute("AddComment",
-                    new { PostId = postId, UserId = userId, CommentText = commentText },
+                    new { PostID = postId, UserID = userId, CommentText = commentText },
                     commandType: CommandType.StoredProcedure);
             }
         }
@@ -35,7 +32,7 @@ namespace BlogCommunityAPI_Assignment2.Repository.Repos
                 connection.Open();
                 return connection.Query<Comment>(
                     "GetCommentsByPost",
-                    new { PostId = postId },
+                    new { PostID = postId },
                     commandType: CommandType.StoredProcedure
                 ).ToList();
             }
@@ -47,16 +44,11 @@ namespace BlogCommunityAPI_Assignment2.Repository.Repos
             {
                 connection.Open();
                 var postOwnerId = connection.QuerySingleOrDefault<int?>(
-                    "SELECT UserID FROM Posts WHERE PostID = @PostID",
+                    "SELECT UserID FROM BlogPosts WHERE PostID = @PostID",
                     new { PostID = postId });
 
-                if (postOwnerId == null)
-                {
-                    throw new ArgumentException("Post not found.");
-                }
-                return postOwnerId.Value;
+                return postOwnerId ?? -1;  // Returnera -1 om inlägget inte finns
             }
         }
     }
-
 }

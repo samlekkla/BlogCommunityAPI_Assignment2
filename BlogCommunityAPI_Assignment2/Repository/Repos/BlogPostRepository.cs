@@ -3,6 +3,7 @@ using BlogCommunityAPI_Assignment2.Repository.Entities;
 using BlogCommunityAPI_Assignment2.Repository.Interfaces;
 using Dapper;
 using System.Data;
+using System.Data.Common;
 
 namespace BlogCommunityAPI_Assignment2.Repository.Repos
 {
@@ -17,31 +18,31 @@ namespace BlogCommunityAPI_Assignment2.Repository.Repos
             _dbContext = dbContext;
         }
 
-        public int CreateBlogPost(BlogPostDTO post, int loggedInUserID)
+        public int CreateBlogPost(BlogPostDTO post)
         {
-            using (var connection = _dbContext.GetConnection()) // Öppna databasanslutning
-
+            using (var connection = _dbContext.GetConnection())
             {
                 connection.Open();
 
                 // 🔍 Hämta CategoryName baserat på CategoryID
-                var category = connection.QueryFirstOrDefault<Category>(
-                    "SELECT CategoryID, CategoryName FROM Categories WHERE CategoryID = @CategoryID",
+                var categoryName = connection.QueryFirstOrDefault<string>(
+                    "SELECT CategoryName FROM Categories WHERE CategoryID = @CategoryID",
                     new { post.CategoryID });
 
-                if (category == null)
+                if (string.IsNullOrEmpty(categoryName))
                 {
-                    throw new Exception("Ogiltigt CategoryID. Kategorin finns inte.");
+                    throw new Exception("Invalid CategoryID. Category does not exist.");
                 }
 
                 var parameters = new DynamicParameters();
-                parameters.Add("@UserID", loggedInUserID);
-                parameters.Add("@PostID", dbType: DbType.Int32, direction: ParameterDirection.Output);
-                parameters.Add("@CategoryID", category.CategoryID);
+                parameters.Add("@UserID", post.UserID);
+                parameters.Add("@CategoryID", post.CategoryID);
+                parameters.Add("@CategoryName", categoryName);
                 parameters.Add("@Title", post.Title);
                 parameters.Add("@Content", post.Content);
+                parameters.Add("@PostID", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-                // 🔹 Anropa den lagrade proceduren
+                // 🔹 Anropa lagrad procedur
                 connection.Execute("CreateBlogPost", parameters, commandType: CommandType.StoredProcedure);
 
                 return parameters.Get<int>("@PostID");
@@ -84,7 +85,7 @@ namespace BlogCommunityAPI_Assignment2.Repository.Repos
             }
         }
 
-        public bool UpdateBlogPost(int postId, BlogPostDTO post, int userId)
+        public bool UpdateBlogPost(int postId, UpdateBlogPostDTO post, int userId)
         {
             using (var connection = _dbContext.GetConnection())
             {
@@ -93,7 +94,7 @@ namespace BlogCommunityAPI_Assignment2.Repository.Repos
                 var parameters = new
                 {
                     PostID = postId,
-                    UserID = userId, // Använd userId som är kopplat till den inloggade användaren
+                    UserID = userId, // Kontrollera att användaren äger inlägget
                     Title = post.Title,
                     Content = post.Content,
                     CategoryID = post.CategoryID
@@ -114,12 +115,24 @@ namespace BlogCommunityAPI_Assignment2.Repository.Repos
                 var parameters = new
                 {
                     PostID = postId,
-                    UserID = userId // Använd userId som är kopplat till den inloggade användaren
+                    UserID = userId // Säkerställer att endast inläggets ägare kan radera det
                 };
 
                 var rowsAffected = connection.Execute("DeleteBlogPost", parameters, commandType: CommandType.StoredProcedure);
 
-                return rowsAffected > 0; // Returnera true om borttagning lyckades
+                return rowsAffected > 0; // Returnera true om raderingen lyckades
+            }
+        }
+
+        public int GetPostOwnerId(int postId)
+        {
+            using (var connection = _dbContext.GetConnection())
+            {
+                connection.Open();
+                return connection.QuerySingleOrDefault<int>(
+                    "GetPostOwnerId",
+                    new { PostID = postId },
+                    commandType: CommandType.StoredProcedure);
             }
         }
 
@@ -128,14 +141,13 @@ namespace BlogCommunityAPI_Assignment2.Repository.Repos
             using (var connection = _dbContext.GetConnection())
             {
                 connection.Open();
-
-                return connection.QueryFirstOrDefault<BlogPostDTO>(
+                return connection.QuerySingleOrDefault<BlogPostDTO>(
                     "GetBlogPostById",
                     new { PostID = postId },
-                    commandType: CommandType.StoredProcedure
-                );
+                    commandType: CommandType.StoredProcedure);
             }
         }
+
 
         public IEnumerable<BlogPostDTO> SearchPostsByTitle(string title)
         {
@@ -164,6 +176,8 @@ namespace BlogCommunityAPI_Assignment2.Repository.Repos
                 ).ToList();
             }
         }
+
+
     }
 
 }

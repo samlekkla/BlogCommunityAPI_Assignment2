@@ -6,9 +6,8 @@
         public int UserID { get; set; }
         public string Title { get; set; }
         public string Content { get; set; }
-        public string Category { get; set; }
+        public int CategoryID { get; set; }
+        public string CategoryName { get; set; }  // Hämtas automatiskt
         public DateTime CreatedAt { get; set; } = DateTime.Now;
-
-        public List<Comment> Comments { get; set; }
     }
 }

@@ -1,4 +1,4 @@
-﻿using BlogCommunityAPI_Assignment2.Repository.Entities;
+﻿using BlogCommunityAPI_Assignment2.DTO;
 using BlogCommunityAPI_Assignment2.Repository.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -19,36 +19,38 @@ namespace BlogCommunityAPI_Assignment2.Controllers
         }
 
         [HttpPost("add")]
-        public IActionResult AddComment([FromBody] Comment request)
+        public IActionResult AddComment([FromBody] CommentDTO commentDTO)
         {
-            if (request == null || request.PostID <= 0 || string.IsNullOrWhiteSpace(request.CommentText))
+            if (commentDTO == null || string.IsNullOrWhiteSpace(commentDTO.CommentText))
             {
                 return BadRequest("Invalid comment request.");
             }
 
-            // Hämta inloggade användarens UserID från JWT-token
+            // Hämta inloggade användarens ID från token
             var currentUserIdClaim = User.FindFirst(ClaimTypes.NameIdentifier) ?? User.FindFirst("UserID");
             if (currentUserIdClaim == null)
             {
                 return Unauthorized("User not authenticated.");
             }
 
-            if (!int.TryParse(currentUserIdClaim.Value, out int currentUserId))
+            int currentUserId = int.Parse(currentUserIdClaim.Value);
+
+            // Hämta inläggets ägare (postOwnerId)
+            var postOwnerId = _commentRepository.GetPostOwnerId(commentDTO.PostID);
+
+            if (postOwnerId == -1)
             {
-                return Unauthorized("Invalid user ID.");
+                return NotFound("Post not found.");
             }
 
-            // Hämta postens ägare
-            int postOwnerId = _commentRepository.GetPostOwnerId(request.PostID);
-
-            // Förhindra att en användare kommenterar sitt eget inlägg
+            // Kontrollera att användaren inte kommenterar sitt eget inlägg
             if (currentUserId == postOwnerId)
             {
                 return BadRequest("You cannot comment on your own post.");
             }
 
             // Lägg till kommentaren
-            _commentRepository.AddComment(request.PostID, currentUserId, request.CommentText);
+            _commentRepository.AddComment(commentDTO.PostID, currentUserId, commentDTO.CommentText);
 
             return Ok("Comment added successfully.");
         }

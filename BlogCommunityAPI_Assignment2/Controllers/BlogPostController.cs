@@ -1,4 +1,5 @@
 ﻿using BlogCommunityAPI_Assignment2.DTO;
+using BlogCommunityAPI_Assignment2.Repository.Entities;
 using BlogCommunityAPI_Assignment2.Repository.Interfaces;
 using BlogCommunityAPI_Assignment2.Repository.Repos;
 using Microsoft.AspNetCore.Authorization;
@@ -36,21 +37,43 @@ namespace BlogCommunityAPI_Assignment2.Controllers
 
         [Authorize]
         [HttpPost("CreateBlogPost")]
-        public IActionResult CreateBlogPost([FromBody] BlogPostDTO postDTO)
+        public IActionResult CreateBlogPost([FromBody] CreateBlogPostDTO postDTO)
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.Name)?.Value); // Hämtar inloggad användares ID
-            var postId = _blogPostRepository.CreateBlogPost(postDTO, userId); // Skickar userId och CategoryID
+            if (postDTO == null || string.IsNullOrWhiteSpace(postDTO.Title) || string.IsNullOrWhiteSpace(postDTO.Content))
+            {
+                return BadRequest("Invalid blog post data.");
+            }
 
-            return CreatedAtAction(nameof(GetAllBlogPosts), new { id = postId }, postDTO);
+            //  Hämta UserID från den inloggade användaren
+            var userIdClaim = User.FindFirst("UserID");
+            if (userIdClaim == null)
+            {
+                return Unauthorized("User ID not found.");
+            }
+
+            int userId = int.Parse(userIdClaim.Value);
+
+            //  Skapa och skicka DTO med UserID
+            var newPost = new BlogPostDTO
+            {
+                Title = postDTO.Title,
+                Content = postDTO.Content,
+                CategoryID = postDTO.CategoryID,
+                UserID = userId
+            };
+
+            //  Skicka till repository
+            int postId = _blogPostRepository.CreateBlogPost(newPost);
+
+            return Ok(new { Message = "Blog post created successfully.", PostID = postId });
         }
 
         [Authorize]
         [HttpPut("update/{postId}")]
-        public IActionResult UpdateBlogPost(int postId, [FromBody] BlogPostDTO postDTO)
+        public IActionResult UpdateBlogPost(int postId, [FromBody] UpdateBlogPostDTO postDTO)
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.Name)?.Value); // Hämtar den inloggade användarens ID
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value); // Hämtar inloggad användares ID
 
-            // Vi skickar inte med userId eftersom det redan är hämtat ovan
             bool updated = _blogPostRepository.UpdateBlogPost(postId, postDTO, userId);
 
             if (updated)
@@ -59,7 +82,7 @@ namespace BlogCommunityAPI_Assignment2.Controllers
             }
             else
             {
-                return Forbid(); // Förbjuder uppdatering om användaren inte är ägaren
+                return Forbid(); // Om användaren inte är ägare av inlägget
             }
         }
 
@@ -67,14 +90,14 @@ namespace BlogCommunityAPI_Assignment2.Controllers
         [HttpDelete("{postId}")]
         public IActionResult DeleteBlogPost(int postId)
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.Name)?.Value);
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value); // Hämtar inloggad användares ID
 
-            bool deleted = _blogPostRepository.DeleteBlogPost(postId, userId); // Använd bool istället för int
+            bool deleted = _blogPostRepository.DeleteBlogPost(postId, userId);
 
             if (!deleted)
-                return NotFound("Post not found or unauthorized.");
+                return NotFound(new { message = "Inlägget finns inte eller så har du inte behörighet att ta bort det." });
 
-            return Ok("Post deleted successfully.");
+            return Ok(new { message = "Inlägget har raderats." });
         }
 
 
